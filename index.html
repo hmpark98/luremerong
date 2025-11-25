@@ -489,14 +489,36 @@ function useCleanSlate() {
     traceClean += cost;
     traceUsed += cost;
 
-    const idx = lastIndexOfUsed();
-    if (idx !== -1) slotStates[idx] = "empty";
+    // ✅ 1) 가장 최근 실패 칸 위치 찾기
+    let failIdx = -1;
+    for (let i = slotStates.length - 1; i >= 0; i--) {
+        if (slotStates[i] === "fail") {
+            failIdx = i;
+            break;
+        }
+    }
 
+    if (failIdx !== -1) {
+        // ✅ 2) 실패 칸을 "제거"하고 뒤 네모들을 앞으로 땡김
+        slotStates.splice(failIdx, 1);
+        slotStates.push("empty"); // 길이 유지 + 오른쪽에 빈칸 생김
+    } else {
+        // fail이 없으면(예외) 마지막 사용 칸을 복구하는 fallback
+        const lastUsed = lastIndexOfUsed();
+        if (lastUsed !== -1) {
+            slotStates.splice(lastUsed, 1);
+            slotStates.push("empty");
+        }
+    }
+
+    // 실제 남은 업횟도 +1
     slotsLeft = Math.min(slotsLeft + 1, slotsTotal);
     pushLog("순백 사용 → 업횟 +1, 흔적 " + cost);
 
     updateUI();
 }
+
+
 
 
 function useArkInno() {
