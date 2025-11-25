@@ -2,20 +2,56 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>놀긍혼 수동 시뮬레이터</title>
 <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 1100px; margin: auto; }
-    h1 { margin-bottom: 6px; }
-    .panel { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
-    .log-box { background: #111; color: #0f0; padding: 10px; border-radius: 6px; height: 200px; overflow-y: auto; }
-    .btn { padding: 6px 10px; margin-right: 6px; margin-bottom: 6px; cursor: pointer; }
+    label {
+        display: block;
+        margin-bottom: 8px; /* 줄 간격 */
+    }
 
-    /* ====== 옵션 카드 UI ====== */
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+      overflow-x: hidden;   /* ✅ 모바일에서 카드 삐져나오는 문제 해결 */
+    }
+    h1 { margin-bottom: 6px; }
+
+    .panel {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      box-sizing: border-box; /* 카드 넘침 방지 */
+    }
+
+    .log-box {
+      background: #111;
+      color: #0f0;
+      padding: 10px;
+      border-radius: 6px;
+      height: 200px;
+      overflow-y: auto;
+    }
+
+    .btn {
+      padding: 6px 10px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+
+    /* =========================
+       옵션 카드 UI
+    ========================= */
     .stats-cards {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
-      max-width: 360px;
+      max-width: 360px; /* 데스크톱 제한 */
+      width: 100%;
     }
 
     .stats-card {
@@ -27,6 +63,7 @@
       justify-content: space-between;
       align-items: center;
       transition: 0.15s ease;
+      box-sizing: border-box; /* 모바일 넘침 방지 */
     }
 
     .stats-card .name { font-weight: 700; }
@@ -36,24 +73,27 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* ====== 미리보기 숫자 강조 ====== */
     .stats-card .preview {
       font-size: 16px;
       font-weight: 800;
       color: #d35400;
       line-height: 1.2;
     }
+
     .preview-active .vals > div:first-child {
       color: #888;
     }
 
-    /* ====== 업횟 시각화 ====== */
+    /* =========================
+       업횟 네모
+    ========================= */
     .slots-bar {
       display: flex;
       gap: 6px;
       margin: 8px 0 12px;
       flex-wrap: wrap;
     }
+
     .slot {
       width: 18px;
       height: 18px;
@@ -61,16 +101,20 @@
       border-radius: 3px;
       background: transparent;
     }
+
     .slot.used-success {
       background: #4a90e2;
       border-color: #4a90e2;
     }
+
     .slot.used-fail {
       background: #e74c3c;
       border-color: #e74c3c;
     }
 
-    /* ====== 리턴 미리보기 강조 ====== */
+    /* =========================
+       리턴 미리보기 강조
+    ========================= */
     .preview-active {
       border: 2px solid #f1c40f !important;
       background: #fff8d6 !important;
@@ -86,55 +130,114 @@
       border-radius: 6px;
       display: none;
     }
+
     .preview-banner.show { display: block; }
 
-    /* ====== 버튼 disable 스타일 ====== */
+    /* 버튼 disable */
     .btn:disabled {
       opacity: 0.45;
       cursor: not-allowed;
       filter: grayscale(0.4);
     }
 
-    /* 행동 블록 안에서 적용/안함 버튼을 살짝 구분 */
+    /* =========================
+       행동 버튼 2열 그리드
+    ========================= */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
     .decision-row {
-      margin-top: 6px;
-      padding-top: 6px;
-      border-top: 1px dashed #ccc;
+
+
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr);  /* 좌우 2열 */
+      gap: 8px;  /* 버튼 간격 */
+    }
+
+    /* =========================
+       모바일 대응
+    ========================= */
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+
+      .panel { padding: 10px; }
+
+      /* 모바일에서 카드 넘침 완전 방지 */
+      .stats-cards {
+        grid-template-columns: 1fr; /* 세로 1열 */
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .stats-card {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* 버튼 크게 */
+      .btn {
+        width: 100%;
+        font-size: 16px;
+        padding: 10px 12px;
+        margin-right: 0;
+      }
+
+      .action-grid .btn { width: 100%; }
+
+      /* 업횟 네모 크게 */
+      .slot {
+        width: 22px;
+        height: 22px;
+      }
     }
 </style>
 </head>
 <body>
 
-<h1>놀긍리턴 시뮬레이터</h1>
+<h1>놀긍 리턴 시뮬레이터</h1>
 
+<!-- =========================
+     설정
+========================= -->
 <div class="panel">
     <h3>설정</h3>
+
     <label>
-        업그레이드 가능 업횟:
+        업그레이드 가능 횟수:
         <input type="number" id="slotsTotal" value="8" min="0" style="width:60px;">
     </label>
-    &nbsp;&nbsp;
+
     <label>
         주문의 흔적 가격:
         <input type="number" id="tracePrice" value="2000" min="0" style="width:80px;">
     </label>
-    &nbsp;&nbsp;
+
     <label>
-        <input type="checkbox" id="halfEvent"> 흔적 반값 이벤트
+        주흔 반값 이벤트 <input type="checkbox" id="halfEvent"> 
     </label>
 
     <button class="btn" onclick="resetAll()" style="float:right;">전체 리셋</button>
     <div style="clear:both;"></div>
 </div>
 
+
+<!-- =========================
+     상태
+========================= -->
 <div class="panel">
+
     <h3>아이템 상태</h3>
+
     <p>남은 업횟: <b id="slotsLeftText"></b></p>
 
     <div id="slotsBar" class="slots-bar"></div>
 
     <div id="previewBanner" class="preview-banner">
-      ⚠️ 리턴 사용 중: 아래 미리보기 옵션을 적용/취소하세요!
+        ⚠️ 리턴 사용 중: 아래 미리보기 옵션을 적용/취소하세요!
     </div>
 
     <div id="statsCards" class="stats-cards"></div>
@@ -146,37 +249,52 @@
     </p>
 </div>
 
-<div class="panel">
-    <h3>주문의 흔적 사용</h3>
-    <button class="btn" onclick="useArkInno()">아크이노</button>
-    <button class="btn" id="btnScroll60" onclick="useScroll60()">놀긍혼 60%</button>
-    <button class="btn" id="btnScroll100" onclick="useScroll100()">놀긍혼 100%</button>
-    <button class="btn" onclick="useCleanSlate()">순백</button>
 
-    <!-- ✅ 적용/안함 버튼을 행동 블록 아래로 이동 -->
+<!-- =========================
+     행동
+========================= -->
+<div class="panel">
+    <h3>주문서 사용</h3>
+    <div class="action-grid">
+        <button class="btn" id="btnScroll60" onclick="useScroll60()">놀긍혼 60%</button>
+        <button class="btn" id="btnScroll100" onclick="useScroll100()">놀긍혼 100%</button>
+        <button class="btn" onclick="useArkInno()">아크이노</button>
+        <button class="btn" onclick="useCleanSlate()">순백</button>
+    </div>
+
+    <h3>리턴스크롤 적용 여부</h3>
     <div class="decision-row">
-    <h3>리턴 옵션 적용 할까 말까?</h3>
-      <button class="btn" id="btnApplyPreview" onclick="applyPreview()">옵션 적용</button>
-      <button class="btn" id="btnCancelPreview" onclick="cancelPreview()">옵션 적용 안함</button>
+        <button class="btn" id="btnApplyPreview" onclick="applyPreview()">옵션 적용</button>
+        <button class="btn" id="btnCancelPreview" onclick="cancelPreview()">옵션 적용 안함</button>
     </div>
 </div>
 
+
+<!-- =========================
+     소모
+========================= -->
 <div class="panel">
     <h3>소모 재화</h3>
+
     <p>60% 놀긍혼: <b id="scroll60Used"></b> 장</p>
     <p>100% 놀긍혼: <b id="scroll100Used"></b> 장</p>
     <p>리턴스크롤: <b id="returnUsed"></b> 개</p>
     <hr>
     <p>순백 흔적: <b id="traceClean"></b> 개</p>
     <p>아크이노 흔적: <b id="traceArk"></b> 개</p>
-    <p>총 흔적: <b id="traceUsed"></b> 개</p>
-    <p>흔적 메소: <b id="traceMeso"></b> 메소</p>
+    <p>총 주흔: <b id="traceUsed"></b> 개</p>
+    <p>주흔 메소: <b id="traceMeso"></b> 메소</p>
 </div>
 
+
+<!-- =========================
+     로그
+========================= -->
 <div class="panel">
     <h3>로그</h3>
     <div class="log-box" id="logBox"></div>
 </div>
+
 
 <script>
 const OPTIONS = ["STR", "DEX", "INT", "LUK", "ATK"];
@@ -188,8 +306,7 @@ const SUCCESS_PROB = 0.6;
 
 let slotsTotal = 8;
 let slotsLeft = 8;
-
-let slotStates = Array(slotsTotal).fill("empty"); // "empty" | "success" | "fail"
+let slotStates = Array(slotsTotal).fill("empty");
 
 let stats = {};
 let preview = null;
@@ -204,21 +321,25 @@ let scroll60Used = 0;
 let scroll100Used = 0;
 let returnUsed = 0;
 
+
 function initStats() {
     stats = {};
     OPTIONS.forEach(k => stats[k] = 0);
 }
 initStats();
 
+
 function firstIndexOfEmpty() {
     return slotStates.indexOf("empty");
 }
+
 function lastIndexOfUsed() {
     for (let i = slotStates.length - 1; i >= 0; i--) {
         if (slotStates[i] !== "empty") return i;
     }
     return -1;
 }
+
 
 function updateUI() {
     document.getElementById("slotsLeftText").innerText = slotsLeft + " / " + slotsTotal;
@@ -231,10 +352,10 @@ function updateUI() {
     });
     document.getElementById("slotsBar").innerHTML = bar;
 
-    let cards = "";
     const isPreviewing = preview !== null;
+    let cards = "";
     OPTIONS.forEach(k => {
-      cards += `
+        cards += `
         <div class="stats-card ${isPreviewing ? "preview-active" : ""}">
           <div class="name">${k}</div>
           <div class="vals">
@@ -246,18 +367,14 @@ function updateUI() {
     });
     document.getElementById("statsCards").innerHTML = cards;
 
-    // 배너: preview + return ON일 때만 노출
     const banner = document.getElementById("previewBanner");
     if (preview && returnApplied) banner.classList.add("show");
     else banner.classList.remove("show");
 
-    // 미리보기 결정 중이면 놀긍혼 버튼 비활성화
     const lockScroll = (preview !== null);
     document.getElementById("btnScroll60").disabled = lockScroll;
     document.getElementById("btnScroll100").disabled = lockScroll;
 
-    // ✅ 리턴 OFF면 적용/안함 버튼 비활성화
-    // 리턴 ON이어도 preview가 없으면 비활성화
     const canDecide = returnApplied && (preview !== null);
     document.getElementById("btnApplyPreview").disabled = !canDecide;
     document.getElementById("btnCancelPreview").disabled = !canDecide;
@@ -272,6 +389,7 @@ function updateUI() {
     document.getElementById("traceMeso").innerText = (traceUsed * tracePrice).toLocaleString();
 }
 
+
 function pushLog(text) {
     const logBox = document.getElementById("logBox");
     const div = document.createElement("div");
@@ -279,6 +397,10 @@ function pushLog(text) {
     logBox.prepend(div);
 }
 
+
+/* ============================
+   확률 관련
+============================ */
 function rollIncrement() {
     let r = Math.random() * 100;
     let acc = 0;
@@ -288,26 +410,25 @@ function rollIncrement() {
     }
     return 0;
 }
+
 function rollAllOptions() {
     let inc = {};
     OPTIONS.forEach(k => inc[k] = rollIncrement());
     return inc;
 }
 
-/* ============================
-   행동 버튼 함수
-============================ */
-function useScroll60() {
-    if (preview) {
-        pushLog("리턴 미리보기 결정이 필요합니다. 먼저 옵션 적용/안함을 선택하세요!");
-        return;
-    }
-    if (slotsLeft <= 0) return pushLog("업횟이 없어 60% 사용 불가");
 
-    // 리턴 ON이면 시도 순간 리턴스크롤 1개 선소모
+/* ============================
+   행동 버튼
+============================ */
+
+function useScroll60() {
+    if (preview) return pushLog("리턴 미리보기 결정이 필요합니다.");
+    if (slotsLeft <= 0) return pushLog("업횟 부족");
+
     if (returnApplied) {
         returnUsed++;
-        pushLog("리턴스크롤 소모 → 놀긍혼 60% 시도");
+        pushLog("리턴스크롤 사용 → 60% 시도");
     }
 
     scroll60Used++;
@@ -315,7 +436,7 @@ function useScroll60() {
 
     if (!success) {
         slotsLeft--;
-        const idx = firstIndexOfEmpty();
+        let idx = firstIndexOfEmpty();
         if (idx !== -1) slotStates[idx] = "fail";
         pushLog("놀긍혼 60% 실패 → 업횟 -1");
         updateUI();
@@ -325,85 +446,92 @@ function useScroll60() {
     const inc = rollAllOptions();
     if (returnApplied) {
         preview = inc;
-        pushLog("60% 성공(리턴 ON) → 미리보기 생성: " + JSON.stringify(inc));
+        pushLog("60% 성공(리턴) → 미리보기 생성: " + JSON.stringify(inc));
     } else {
         OPTIONS.forEach(k => stats[k] += inc[k]);
         slotsLeft--;
-        const idx = firstIndexOfEmpty();
+        let idx = firstIndexOfEmpty();
         if (idx !== -1) slotStates[idx] = "success";
-        pushLog("60% 성공 → 즉시 적용, 업횟 -1: " + JSON.stringify(inc));
+        pushLog("60% 성공 → 즉시 적용: " + JSON.stringify(inc));
     }
+
     updateUI();
 }
 
+
 function useScroll100() {
-    if (preview) {
-        pushLog("리턴 미리보기 결정이 필요합니다. 먼저 옵션 적용/안함을 선택하세요!");
-        return;
-    }
-    if (slotsLeft <= 0) return pushLog("업횟이 없어 100% 사용 불가");
+    if (preview) return pushLog("리턴 미리보기 결정이 필요합니다.");
+    if (slotsLeft <= 0) return pushLog("업횟 부족");
 
     const inc = rollAllOptions();
     scroll100Used++;
 
     if (returnApplied) {
         preview = inc;
-        returnUsed++; // 100%는 실패 없음 → 여기서 소모
-        pushLog("100% 성공(리턴 ON) → 미리보기 생성: " + JSON.stringify(inc));
+        returnUsed++;
+        pushLog("100% 성공(리턴) → 미리보기 생성: " + JSON.stringify(inc));
     } else {
         OPTIONS.forEach(k => stats[k] += inc[k]);
         slotsLeft--;
-        const idx = firstIndexOfEmpty();
+        let idx = firstIndexOfEmpty();
         if (idx !== -1) slotStates[idx] = "success";
-        pushLog("100% 성공 → 즉시 적용, 업횟 -1: " + JSON.stringify(inc));
+        pushLog("100% 성공 → 즉시 적용: " + JSON.stringify(inc));
     }
+
     updateUI();
 }
+
 
 function useCleanSlate() {
     const half = document.getElementById("halfEvent").checked;
     const cost = Math.round(20000 * (half ? 0.5 : 1));
+
     traceClean += cost;
     traceUsed += cost;
 
-    const lastUsed = lastIndexOfUsed();
-    if (lastUsed !== -1) slotStates[lastUsed] = "empty";
+    const idx = lastIndexOfUsed();
+    if (idx !== -1) slotStates[idx] = "empty";
 
     slotsLeft = Math.min(slotsLeft + 1, slotsTotal);
     pushLog("순백 사용 → 업횟 +1, 흔적 " + cost);
+
     updateUI();
 }
+
 
 function useArkInno() {
     const half = document.getElementById("halfEvent").checked;
     const cost = Math.round(24000 * (half ? 0.5 : 1));
+
     traceArk += cost;
     traceUsed += cost;
 
     initStats();
-    slotsLeft = slotsTotal;
     preview = null;
+    slotsLeft = slotsTotal;
     slotStates = Array(slotsTotal).fill("empty");
 
     pushLog("아크이노 → 전체 초기화, 흔적 " + cost);
+
     updateUI();
 }
+
 
 function toggleReturn() {
     returnApplied = document.getElementById("returnToggle").checked;
     pushLog("리턴 " + (returnApplied ? "ON" : "OFF"));
-    // 리턴 OFF로 바뀌면 preview가 있더라도 배너/결정 버튼은 자동 비활성화됨
     updateUI();
 }
 
+
 function applyPreview() {
     if (!preview) return pushLog("적용할 미리보기가 없음");
-    if (slotsLeft <= 0) return pushLog("업횟이 없어 적용 불가");
+    if (slotsLeft <= 0) return pushLog("업횟 부족");
 
     OPTIONS.forEach(k => stats[k] += preview[k]);
     slotsLeft--;
 
-    const idx = firstIndexOfEmpty();
+    let idx = firstIndexOfEmpty();
     if (idx !== -1) slotStates[idx] = "success";
 
     pushLog("리턴 적용 → 업횟 -1, 적용: " + JSON.stringify(preview));
@@ -412,25 +540,32 @@ function applyPreview() {
     updateUI();
 }
 
+
 function cancelPreview() {
     if (!preview) return pushLog("취소할 미리보기가 없음");
+
     pushLog("리턴 취소 → 미리보기 폐기");
     preview = null;
     updateUI();
 }
+
 
 function resetAll() {
     slotsTotal = Number(document.getElementById("slotsTotal").value);
     tracePrice = Number(document.getElementById("tracePrice").value);
 
     slotsLeft = slotsTotal;
+    slotStates = Array(slotsTotal).fill("empty");
+
     initStats();
     preview = null;
 
-    slotStates = Array(slotsTotal).fill("empty");
+    traceUsed = 0;
+    traceClean = 0;
+    traceArk = 0;
 
-    traceUsed = traceClean = traceArk = 0;
-    scroll60Used = scroll100Used = 0;
+    scroll60Used = 0;
+    scroll100Used = 0;
     returnUsed = 0;
 
     document.getElementById("logBox").innerHTML = "";
@@ -438,6 +573,7 @@ function resetAll() {
 
     updateUI();
 }
+
 
 updateUI();
 </script>
