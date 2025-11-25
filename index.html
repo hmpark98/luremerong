@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>놀긍혼 수동 시뮬레이터</title>
 <style>
     body { font-family: system-ui, sans-serif; padding: 20px; max-width: 1100px; margin: auto; }
@@ -102,57 +101,11 @@
       padding-top: 6px;
       border-top: 1px dashed #ccc;
     }
-
-    /* ====== 행동 버튼 2열 그리드 ====== */
-    .action-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    /* stats-cards는 항상 너비 100% 확보 */
-.stats-cards {
-  width: 100%;
-}
-
-/* ===== 모바일 대응 ===== */
-@media (max-width: 600px) {
-  body { padding: 12px; }
-  .panel { padding: 10px; }
-
-  /* ✅ 모바일에선 grid 대신 flex-column으로 강제 */
-  .stats-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: 100%;
-  }
-
-  .stats-card {
-    width: 100%;
-  }
-
-  .btn {
-    width: 100%;
-    margin-right: 0;
-    padding: 10px 12px;
-    font-size: 16px;
-  }
-
-  .action-grid .btn { width: 100%; }
-
-  .slot {
-    width: 22px;
-    height: 22px;
-  }
-}
-
 </style>
 </head>
 <body>
 
-<h1>놀긍혼 수동 시뮬레이터 (브라우저 단일 파일)</h1>
+<h1>놀긍리턴 시뮬레이터</h1>
 
 <div class="panel">
     <h3>설정</h3>
@@ -194,18 +147,15 @@
 </div>
 
 <div class="panel">
-    <h3>행동</h3>
+    <h3>주문의 흔적 사용</h3>
+    <button class="btn" onclick="useArkInno()">아크이노</button>
+    <button class="btn" id="btnScroll60" onclick="useScroll60()">놀긍혼 60%</button>
+    <button class="btn" id="btnScroll100" onclick="useScroll100()">놀긍혼 100%</button>
+    <button class="btn" onclick="useCleanSlate()">순백</button>
 
-    <!-- 행동 버튼 2열 그리드 -->
-    <div class="action-grid">
-      <button class="btn" onclick="useArkInno()">아크이노</button>
-      <button class="btn" id="btnScroll60" onclick="useScroll60()">놀긍혼 60%</button>
-      <button class="btn" id="btnScroll100" onclick="useScroll100()">놀긍혼 100%</button>
-      <button class="btn" onclick="useCleanSlate()">순백</button>
-    </div>
-
-    <!-- 적용/안함 버튼 -->
+    <!-- ✅ 적용/안함 버튼을 행동 블록 아래로 이동 -->
     <div class="decision-row">
+    <h3>리턴 옵션 적용 할까 말까?</h3>
       <button class="btn" id="btnApplyPreview" onclick="applyPreview()">옵션 적용</button>
       <button class="btn" id="btnCancelPreview" onclick="cancelPreview()">옵션 적용 안함</button>
     </div>
@@ -296,6 +246,7 @@ function updateUI() {
     });
     document.getElementById("statsCards").innerHTML = cards;
 
+    // 배너: preview + return ON일 때만 노출
     const banner = document.getElementById("previewBanner");
     if (preview && returnApplied) banner.classList.add("show");
     else banner.classList.remove("show");
@@ -305,7 +256,8 @@ function updateUI() {
     document.getElementById("btnScroll60").disabled = lockScroll;
     document.getElementById("btnScroll100").disabled = lockScroll;
 
-    // 리턴 OFF면 적용/안함 버튼 비활성화
+    // ✅ 리턴 OFF면 적용/안함 버튼 비활성화
+    // 리턴 ON이어도 preview가 없으면 비활성화
     const canDecide = returnApplied && (preview !== null);
     document.getElementById("btnApplyPreview").disabled = !canDecide;
     document.getElementById("btnCancelPreview").disabled = !canDecide;
@@ -352,6 +304,7 @@ function useScroll60() {
     }
     if (slotsLeft <= 0) return pushLog("업횟이 없어 60% 사용 불가");
 
+    // 리턴 ON이면 시도 순간 리턴스크롤 1개 선소모
     if (returnApplied) {
         returnUsed++;
         pushLog("리턴스크롤 소모 → 놀긍혼 60% 시도");
@@ -395,7 +348,7 @@ function useScroll100() {
 
     if (returnApplied) {
         preview = inc;
-        returnUsed++;
+        returnUsed++; // 100%는 실패 없음 → 여기서 소모
         pushLog("100% 성공(리턴 ON) → 미리보기 생성: " + JSON.stringify(inc));
     } else {
         OPTIONS.forEach(k => stats[k] += inc[k]);
@@ -439,6 +392,7 @@ function useArkInno() {
 function toggleReturn() {
     returnApplied = document.getElementById("returnToggle").checked;
     pushLog("리턴 " + (returnApplied ? "ON" : "OFF"));
+    // 리턴 OFF로 바뀌면 preview가 있더라도 배너/결정 버튼은 자동 비활성화됨
     updateUI();
 }
 
